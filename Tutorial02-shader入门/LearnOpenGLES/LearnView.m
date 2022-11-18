@@ -44,7 +44,9 @@
 }
 
 - (void)render {
+    //用来设置清屏颜色，默认为黑色
     glClearColor(0, 1.0, 0, 1.0);
+    //glClear (GLbitfieldmask)用来指定要用清屏颜色来清除由mask指定的buffer，mask 可以是 GL_COLOR_BUFFER_BIT，GL_DEPTH_BUFFER_BIT和GL_STENCIL_BUFFER_BIT的自由组合
     glClear(GL_COLOR_BUFFER_BIT);
     
     
@@ -122,7 +124,7 @@
     glUniformMatrix4fv(rotate, 1, GL_FALSE, (GLfloat *)&zRotation[0]);
     
     glDrawArrays(GL_TRIANGLES, 0, 6);
-    
+    ////将指定 renderbuffer 呈现在屏幕上，在这里我们指定的是前面已经绑定为当前 renderbuffer 的那个，在renderbuffer可以被呈现之前,必须调用renderbufferStorage:fromDrawable: 为之分配存储空间。
     [self.myContext presentRenderbuffer:GL_RENDERBUFFER];
 }
 
@@ -197,22 +199,28 @@
     self.myContext = context;
 }
 
+//渲染缓存是OpenGLES管理的一处高效内存区域，它可以储存格式化的图像数据。渲染缓存中的数据只有关联到一个帧缓存对象才有意义，并且需要保证图像缓存格式必须与要求的渲染格式相符（比如:不能将颜色值渲染到深度缓存中）
 - (void)setupRenderBuffer {
     GLuint buffer;
+    //分配n个未使用的渲染缓存对象，并将它存储到renderbuffers中。注意：返回的 id不会为0，0是OpenGL ES 保留的，我们也不能使用 id 为0的 renderbuffer。
     glGenRenderbuffers(1, &buffer);
     self.myColorRenderBuffer = buffer;
+    //创建并绑定渲染缓存。当第一次来绑定某个渲染缓存的时候，它会分配这个对象的存储空间并初始化，此后再调用这个函数的时候会将指定的渲染缓存对象绑定为当前的激活状态。
     glBindRenderbuffer(GL_RENDERBUFFER, self.myColorRenderBuffer);
     // 为 颜色缓冲区 分配存储空间
+    //该函数内部是通过调用glRenderbufferStorage来分配图像数据空间。
     [self.myContext renderbufferStorage:GL_RENDERBUFFER fromDrawable:self.myEagLayer];
 }
 
-
+//帧缓存是屏幕所显示画面的一个直接映象，又称为位映射图(Bit Map)或光栅。帧缓存的每一存储单元对应屏幕上的一个像素，整个帧缓存对应一帧图像
 - (void)setupFrameBuffer {
     GLuint buffer;
+    //分配n个未使用的帧缓存对象，并将它存储到framebuffers中。
     glGenFramebuffers(1, &buffer);
     self.myColorFrameBuffer = buffer;
-    // 设置为当前 framebuffer
+    //设置一个可读可写的帧缓存。当第一次来绑定某个帧缓存的时候，它会分配这个对象的存储空间并初始化，此后再调用这个函数的时候会将指定的帧缓存对象绑定为当前的激活状态。
     glBindFramebuffer(GL_FRAMEBUFFER, self.myColorFrameBuffer);
+    //该函数是将相关的 buffer（三大buffer之一）attach到framebuffer上 或从 framebuffer上detach（如果 renderbuffer为 0）。参数 attachment 是指定 renderbuffer 被装配到那个装配点上，其值是GL_COLOR_ATTACHMENTi, GL_DEPTH_ATTACHMENT, GL_STENCIL_ATTACHMENT中的一个，分别对应 color，depth和 stencil三大buffer
     // 将 _colorRenderBuffer 装配到 GL_COLOR_ATTACHMENT0 这个装配点上
     glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
                               GL_RENDERBUFFER, self.myColorRenderBuffer);
