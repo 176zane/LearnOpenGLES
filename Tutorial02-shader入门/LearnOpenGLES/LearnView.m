@@ -60,7 +60,7 @@
     //加载shader
     self.myProgram = [self loadShaders:vertFile frag:fragFile];
     
-    //链接
+    //6.Link the program,链接程序将确保顶点着色器写入片段着色器所使用的所有顶点着色器输出变量，链接程序确保任何在顶点和片段着色器中都声明的统一变量和统一变量缓冲区的类型相符，链接程序确保最终程序符合具体实现的限制。
     glLinkProgram(self.myProgram);
     GLint linkSuccess;
     glGetProgramiv(self.myProgram, GL_LINK_STATUS, &linkSuccess);
@@ -92,9 +92,10 @@
     GLuint attrBuffer;
     glGenBuffers(1, &attrBuffer);
     glBindBuffer(GL_ARRAY_BUFFER, attrBuffer);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(attrArr), attrArr, GL_DYNAMIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(attrArr), attrArr, GL_DYNAMIC_DRAW);////把顶点数据从cpu内存复制到gpu内存
     
     GLuint position = glGetAttribLocation(self.myProgram, "position");
+    // 加载顶点数据，indx参数指定通用顶点属性索引，size参数表示顶点数组中微索引引用的顶点属性所指定的分量数量，type参数表示数据格式，normalized参数表示非浮点数据类型转换为浮点值时是否应该规范化，stride参数指定顶点索引I和I+1表示的顶点数据之间的位移，ptr参数在使用客户端顶点数组时表示保存顶点属性数据的缓冲区指针，在使用顶点缓冲区对象时，表示该缓冲区内的偏移量。
     glVertexAttribPointer(position, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 5, NULL);
     glEnableVertexAttribArray(position);
     
@@ -121,10 +122,10 @@
     };
     
     //设置旋转矩阵
-    glUniformMatrix4fv(rotate, 1, GL_FALSE, (GLfloat *)&zRotation[0]);
+   // glUniformMatrix4fv(rotate, 1, GL_FALSE, (GLfloat *)&zRotation[0]);
     
     glDrawArrays(GL_TRIANGLES, 0, 6);
-    ////将指定 renderbuffer 呈现在屏幕上，在这里我们指定的是前面已经绑定为当前 renderbuffer 的那个，在renderbuffer可以被呈现之前,必须调用renderbufferStorage:fromDrawable: 为之分配存储空间。
+    //将指定 renderbuffer 呈现在屏幕上，在这里我们指定的是前面已经绑定为当前 renderbuffer 的那个，在renderbuffer可以被呈现之前,必须调用renderbufferStorage:fromDrawable: 为之分配存储空间。
     [self.myContext presentRenderbuffer:GL_RENDERBUFFER];
 }
 
@@ -138,17 +139,19 @@
  */
 - (GLuint)loadShaders:(NSString *)vert frag:(NSString *)frag {
     GLuint verShader, fragShader;
-    GLint program = glCreateProgram();
-    
     //编译
     [self compileShader:&verShader type:GL_VERTEX_SHADER file:vert];
     [self compileShader:&fragShader type:GL_FRAGMENT_SHADER file:frag];
     
+    //4.Create the program object，程序对象是一个容器对象，需要将其与着色器连接，并链接一个最终的可执行程序。
+    GLint program = glCreateProgram();
+    //5.不同的着色器编译为一个着色器对象之后，必须连接到一个程序对象并一起链接，才能绘制图形，OPENGL ES中程序对象必须连接一个顶点着色器和一个片段着色器。注意，着色器可以在任何时候连接，在连接到程序之前不一定需要编译，甚至可以没有源代码。
     glAttachShader(program, verShader);
     glAttachShader(program, fragShader);
     
     
     //释放不需要的shader
+    //当一个着色器连接到程序对象后，调用该函数不会立刻删除着色器，而是将其标记为删除，在着色器不再连接到任何程序对象时，释放它的内存。
     glDeleteShader(verShader);
     glDeleteShader(fragShader);
     
@@ -159,9 +162,11 @@
     //读取字符串
     NSString* content = [NSString stringWithContentsOfFile:file encoding:NSUTF8StringEncoding error:nil];
     const GLchar* source = (GLchar *)[content UTF8String];
-    
+    //1. Create the shader object
     *shader = glCreateShader(type);
+    //2. Load the shader source，参数1表示着色器源字符串数量，着色器可以由多个源字符串组成，但只能有一个main函数。
     glShaderSource(*shader, 1, &source, NULL);
+    //3.Compile the shader
     glCompileShader(*shader);
 }
 
